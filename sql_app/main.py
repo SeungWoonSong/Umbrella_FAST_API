@@ -21,14 +21,24 @@ def get_db():
 def read_root():
     return {"message": "Welcome to Umbrella API!"}
 
+# 2. 우산 대여
+@app.post("/borrow", response_model=schemas.UmbrellaHistory)
+def borrow_umbrella(borrow_data: schemas.BorrowUmbrella, db: Session = Depends(get_db)):
+    return crud.borrow_umbrella(db, borrow_data=borrow_data)
+
+# 3. 우산 반납
+@app.post("/return", response_model=schemas.UmbrellaHistory)
+def return_umbrella(return_data: schemas.ReturnUmbrella, db: Session = Depends(get_db)):
+    return crud.return_umbrella(db, return_data=return_data)
+
 # 사용자 생성
 @app.post("/users/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return crud.create_user(db=db, user=user)
 
-@app.get("/users/{user_id}", response_model=schemas.User)
-def get_user(user_id: int, db: Session = Depends(get_db)):
-    return crud.get_user(db, user_id=user_id)
+@app.get("/users/{user_id}", response_model=schemas.UserWithUmbrella)
+def get_user_with_umbrella(user_id: int, db: Session = Depends(get_db)):
+    return crud.get_user_with_umbrella(db, user_id=user_id)
 
 # 사용자 조회
 @app.get("/users/", response_model=List[schemas.User])

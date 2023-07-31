@@ -43,3 +43,19 @@ class UmbrellaHistory(UmbrellaHistoryBase):
 
     class Config:
         orm_mode = True
+
+class BorrowUmbrella(BaseModel):
+    user_id: int
+    umbrella_id: int
+
+class ReturnUmbrella(BaseModel):
+    user_id: int
+    umbrella_id: int
+
+class UserWithUmbrella(BaseModel):
+    user: User
+    umbrella: Optional[Umbrella]
+    status: str
+
+    class Config:
+        orm_mode = True

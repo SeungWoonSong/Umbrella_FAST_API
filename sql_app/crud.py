@@ -46,3 +46,48 @@ def create_umbrella_history(db: Session, history: schemas.UmbrellaHistoryCreate)
 # 우산 대여 이력 조회
 def get_umbrella_history(db: Session, skip: int = 0, limit: int = 10):
     return db.query(models.UmbrellaHistory).offset(skip).limit(limit).all()
+
+def get_user_with_umbrella(db: Session, user_name: str):
+    user = db.query(models.User).filter(models.User.name == user_name).first()
+    umbrella = db.query(models.Umbrella).filter(models.Umbrella.owner_id == user.id).first()
+
+    if umbrella:
+        return schemas.UserWithUmbrella(user=user, umbrella=umbrella, status="borrowed")
+    else:
+        return schemas.UserWithUmbrella(user=user, umbrella=None, status="available")
+
+def borrow_umbrella(db: Session, borrow_data: schemas.BorrowUmbrella):
+    user = db.query(models.User).filter(models.User.id == borrow_data.user_id).first()
+    umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == borrow_data.umbrella_id).first()
+
+    user.status = "borrowed"
+    umbrella.status = "borrowed"
+    
+    umbrella_history = models.UmbrellaHistory(
+        umbrella_id=borrow_data.umbrella_id,
+        user_id=borrow_data.user_id,
+        borrowed_at=datetime.now()
+    )
+    db.add(umbrella_history)
+    db.commit()
+
+    return {"name": user.name, "umbrella_id": umbrella.id}
+
+def return_umbrella(db: Session, return_data: schemas.ReturnUmbrella):
+    user = db.query(models.User).filter(models.User.id == return_data.user_id).first()
+    umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == return_data.umbrella_id).first()
+
+    user.status = "available"
+    umbrella.status = "available"
+    
+    umbrella_history = db.query(models.UmbrellaHistory).filter(
+        models.UmbrellaHistory.umbrella_id == return_data.umbrella_id,
+        models.UmbrellaHistory.returned_at == None
+    ).first()
+    umbrella_history.returned_at = datetime.now()
+
+    db.commit()
+
+    return {"name": user.name, "umbrella_id": umbrella.id}
+
+# 'available', 'borrowed', 'lost'
