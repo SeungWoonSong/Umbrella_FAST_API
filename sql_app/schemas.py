@@ -45,11 +45,11 @@ class UmbrellaHistory(UmbrellaHistoryBase):
         orm_mode = True
 
 class BorrowUmbrella(BaseModel):
-    user_id: int
+    user_name: str
     umbrella_id: int
 
 class ReturnUmbrella(BaseModel):
-    user_id: int
+    user_name: str
     umbrella_id: int
 
 class UserWithUmbrella(BaseModel):
@@ -59,3 +59,7 @@ class UserWithUmbrella(BaseModel):
 
     class Config:
         orm_mode = True
+
+class BorrowReturnResponse(BaseModel):
+    user_name : str
+    umbrella_id : int
