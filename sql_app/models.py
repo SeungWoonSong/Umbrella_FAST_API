@@ -31,7 +31,7 @@ class UmbrellaHistory(Base):
     id = Column(Integer, primary_key=True, index=True)
     umbrella_id = Column(Integer, ForeignKey('umbrellas.id'), nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    borrowed_at = Column(DateTime, default=datetime.datetime.utcnow)
+    borrowed_at = Column(DateTime, default=datetime.datetime.utcnow + datetime.timedelta(hours=9))
     returned_at = Column(DateTime)
 
     umbrella = relationship("Umbrella")
