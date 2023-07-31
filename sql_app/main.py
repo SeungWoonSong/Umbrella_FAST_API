@@ -27,7 +27,6 @@ def borrow_umbrella(borrow_data: schemas.BorrowUmbrella, db: Session = Depends(g
 
 @app.post("/umbrellas/return", response_model=schemas.BorrowReturnResponse)
 def return_umbrella(return_data: schemas.ReturnUmbrella, db: Session = Depends(get_db)):
-    """우산 반납 처리를 합니다."""
     return crud.return_umbrella(db, return_data=return_data)
 
 # 사용자 생성

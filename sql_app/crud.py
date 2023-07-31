@@ -57,7 +57,7 @@ def get_user_with_umbrella(db: Session, user_name: str):
         return schemas.UserWithUmbrella(user=user, umbrella=None, status="available")
 
 def borrow_umbrella(db: Session, borrow_data: schemas.BorrowUmbrella):
-    user = db.query(models.User).filter(models.User.id == borrow_data.user_id).first()
+    user = db.query(models.User).filter(models.User.name == borrow_data.user_name).first()
     umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == borrow_data.umbrella_id).first()
 
     user.status = "borrowed"
@@ -74,7 +74,7 @@ def borrow_umbrella(db: Session, borrow_data: schemas.BorrowUmbrella):
     return {"name": user.name, "umbrella_id": umbrella.id}
 
 def return_umbrella(db: Session, return_data: schemas.ReturnUmbrella):
-    user = db.query(models.User).filter(models.User.id == return_data.user_id).first()
+    user = db.query(models.User).filter(models.User.name == return_data.user_name).first()
     umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == return_data.umbrella_id).first()
 
     user.status = "available"

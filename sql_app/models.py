@@ -20,7 +20,7 @@ class Umbrella(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     status = Column(Enum('available', 'borrowed', 'lost'), default='available')
-    location = Column(String(255))
+    location = Column(String(255)
     owner_id = Column(Integer, ForeignKey('users.id'))
 
     owner = relationship("User", back_populates="umbrellas")
