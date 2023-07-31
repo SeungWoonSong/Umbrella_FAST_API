@@ -17,6 +17,7 @@ class User(UserBase):
 
 class UmbrellaBase(BaseModel):
     status: str
+    location: Optional[str] = None
 
 class UmbrellaCreate(UmbrellaBase):
     pass
