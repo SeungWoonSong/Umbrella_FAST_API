@@ -16,17 +16,17 @@ class User(UserBase):
         from_attributes = True 
 
 class UmbrellaBase(BaseModel):
-    status: str
+    status: str = 'available'
 
 class UmbrellaCreate(UmbrellaBase):
     pass
 
 class Umbrella(UmbrellaBase):
     id: int
-    owner_name: Optional[str]
+    owner_name: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class UmbrellaHistoryBase(BaseModel):
     umbrella_id: int

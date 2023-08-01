@@ -72,7 +72,7 @@ def get_umbrella_history(db: Session, skip: int = 0, limit: int = 10):
 
 def get_user_with_umbrella(db: Session, user_name: str):
     user_db = db.query(models.User).filter(models.User.name == user_name).first()
-    umbrella_db = db.query(models.Umbrella).filter(models.Umbrella.owner_name == user_db.id).first()
+    umbrella_db = db.query(models.Umbrella).filter(models.Umbrella.owner_name == user_db.name).first()
 
     user = schemas.User.from_orm(user_db) # User ORM 객체를 Pydantic 모델로 변환
     umbrella = schemas.Umbrella.from_orm(umbrella_db) if umbrella_db else None # Umbrella ORM 객체를 Pydantic 모델로 변환
@@ -84,9 +84,18 @@ def get_user_with_umbrella(db: Session, user_name: str):
 
 def borrow_umbrella(db: Session, borrow_data: schemas.BorrowUmbrella):
     user = db.query(models.User).filter(models.User.name == borrow_data.user_name).first()
+    if user is None:
+        raise HTTPException(status_code=400, detail="사용자를 찾을 수 없습니다.")
+
     umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == borrow_data.umbrella_id).first()
+    if umbrella is None:
+        raise HTTPException(status_code=400, detail="우산을 찾을 수 없습니다.")
+
+    if user.umbrellas is not None:
+        raise HTTPException(status_code=400, detail="우산을 2개 빌릴 수는 없습니다.")
 
     umbrella.status = "borrowed"
+    umbrella.owner_name = user.name
     
     umbrella_history = models.UmbrellaHistory(
         umbrella_id=borrow_data.umbrella_id,
@@ -96,11 +105,17 @@ def borrow_umbrella(db: Session, borrow_data: schemas.BorrowUmbrella):
     db.add(umbrella_history)
     db.commit()
 
-    return {"name": user.name, "umbrella_id": umbrella.id}
+    return {"user_name": user.name, "umbrella_id": umbrella.id}
 
 def return_umbrella(db: Session, return_data: schemas.ReturnUmbrella):
     user = db.query(models.User).filter(models.User.name == return_data.user_name).first()
+    if user is None:
+        raise HTTPException(status_code=400, detail="사용자를 찾을 수 없습니다.")
     umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == return_data.umbrella_id).first()
+    if umbrella is None:
+        raise HTTPException(status_code=400, detail="우산을 찾을 수 없습니다.")
+    if user.umbrellas is None:
+        raise HTTPException(status_code=400, detail="빌린 우산이 없습니다.")
 
     umbrella.status = "available"
     
@@ -112,6 +127,6 @@ def return_umbrella(db: Session, return_data: schemas.ReturnUmbrella):
 
     db.commit()
 
-    return {"name": user.name, "umbrella_id": umbrella.id}
+    return {"user_name": user.name, "umbrella_id": umbrella.id}
 
 # 'available', 'borrowed', 'lost'
