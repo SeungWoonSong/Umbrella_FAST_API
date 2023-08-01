@@ -1,4 +1,6 @@
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from . import models, schemas
 from pytz import timezone
 from datetime import datetime
@@ -10,9 +12,20 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 # 유저 생성
 def create_user(db: Session, user: schemas.UserCreate):
+    # 동일한 이름을 가진 사용자가 있는지 확인
+    existing_user = db.query(models.User).filter(models.User.name == user.name).first()
+    if existing_user:
+        # 동일한 이름을 가진 사용자가 있으면 에러 반환
+        raise HTTPException(status_code=400, detail="이미 동일한 이름을 가진 사용자가 있습니다.")
+
     db_user = models.User(**user.dict())
     db.add(db_user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # 중복 키 제약 조건과 같은 데이터베이스 오류 처리
+        db.rollback()
+        raise ValueError("이미 동일한 이름을 가진 사용자가 있습니다.")
     db.refresh(db_user)
     return db_user
 
@@ -42,6 +55,9 @@ def update_umbrella_status(db: Session, umbrella_id: int, status: str):
 def get_umbrellas(db: Session, skip: int = 0, limit: int = 10):
     return db.query(models.Umbrella).offset(skip).limit(limit).all()
 
+def get_umbrella(db: Session, umbrella_id: int):
+    return db.query(models.Umbrella).filter(models.Umbrella.id == umbrella_id).first()
+
 # 우산 대여 이력 생성
 def create_umbrella_history(db: Session, history: schemas.UmbrellaHistoryCreate):
     db_history = models.UmbrellaHistory(**history.dict())
@@ -62,22 +78,19 @@ def get_user_with_umbrella(db: Session, user_name: str):
     umbrella = schemas.Umbrella.from_orm(umbrella_db) if umbrella_db else None # Umbrella ORM 객체를 Pydantic 모델로 변환
 
     if umbrella:
-        logger.info("UMBRELLA")
         return schemas.UserWithUmbrella(user=user, umbrella=umbrella, status="borrowed")
     else:
-        logger.info("NO UMBERELLA")
         return schemas.UserWithUmbrella(user=user, umbrella=None, status="available")
 
 def borrow_umbrella(db: Session, borrow_data: schemas.BorrowUmbrella):
     user = db.query(models.User).filter(models.User.name == borrow_data.user_name).first()
     umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == borrow_data.umbrella_id).first()
 
-    user.status = "borrowed"
     umbrella.status = "borrowed"
     
     umbrella_history = models.UmbrellaHistory(
         umbrella_id=borrow_data.umbrella_id,
-        user_id=borrow_data.user_id,
+        user_name=borrow_data.user_name,
         borrowed_at=datetime.now(timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')
     )
     db.add(umbrella_history)
@@ -89,7 +102,6 @@ def return_umbrella(db: Session, return_data: schemas.ReturnUmbrella):
     user = db.query(models.User).filter(models.User.name == return_data.user_name).first()
     umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == return_data.umbrella_id).first()
 
-    user.status = "available"
     umbrella.status = "available"
     
     umbrella_history = db.query(models.UmbrellaHistory).filter(

@@ -24,7 +24,6 @@ class Umbrella(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     status = Column(Enum('available', 'borrowed', 'lost'), default='available')
-    location = Column(String(255))
     owner_name = Column(String(255), ForeignKey('users.name'))
 
     owner = relationship("User", back_populates="umbrellas")
@@ -34,7 +33,7 @@ class UmbrellaHistory(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     umbrella_id = Column(Integer, ForeignKey('umbrellas.id'), nullable=False)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_name = Column(String(255), ForeignKey('users.name'), nullable=False)
     borrowed_at = Column(DateTime, default=datetime.now(timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S'))
     returned_at = Column(DateTime)
 

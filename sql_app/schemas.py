@@ -17,7 +17,6 @@ class User(UserBase):
 
 class UmbrellaBase(BaseModel):
     status: str
-    location: Optional[str] = None
 
 class UmbrellaCreate(UmbrellaBase):
     pass
@@ -31,7 +30,7 @@ class Umbrella(UmbrellaBase):
 
 class UmbrellaHistoryBase(BaseModel):
     umbrella_id: int
-    user_id: int
+    user_name: str
     borrowed_at: datetime
 
 class UmbrellaHistoryCreate(UmbrellaHistoryBase):
