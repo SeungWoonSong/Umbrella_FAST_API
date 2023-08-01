@@ -2,6 +2,12 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 from pytz import timezone
 from datetime import datetime
+
+import logging
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 # 유저 생성
 def create_user(db: Session, user: schemas.UserCreate):
     db_user = models.User(**user.dict())
@@ -49,12 +55,17 @@ def get_umbrella_history(db: Session, skip: int = 0, limit: int = 10):
     return db.query(models.UmbrellaHistory).offset(skip).limit(limit).all()
 
 def get_user_with_umbrella(db: Session, user_name: str):
-    user = db.query(models.User).filter(models.User.name == user_name).first()
-    umbrella = db.query(models.Umbrella).filter(models.Umbrella.owner_id == user.id).first()
+    user_db = db.query(models.User).filter(models.User.name == user_name).first()
+    umbrella_db = db.query(models.Umbrella).filter(models.Umbrella.owner_name == user_db.id).first()
+
+    user = schemas.User.from_orm(user_db) # User ORM 객체를 Pydantic 모델로 변환
+    umbrella = schemas.Umbrella.from_orm(umbrella_db) if umbrella_db else None # Umbrella ORM 객체를 Pydantic 모델로 변환
 
     if umbrella:
+        logger.info("UMBRELLA")
         return schemas.UserWithUmbrella(user=user, umbrella=umbrella, status="borrowed")
     else:
+        logger.info("NO UMBERELLA")
         return schemas.UserWithUmbrella(user=user, umbrella=None, status="available")
 
 def borrow_umbrella(db: Session, borrow_data: schemas.BorrowUmbrella):

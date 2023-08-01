@@ -14,8 +14,8 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), unique=True)
-    email = Column(String(255), unique=True, index=True)
+    name = Column(String(255), unique=True, index=True)
+    email = Column(String(255), unique=True)
     umbrellas = relationship("Umbrella", back_populates="owner")
     history = relationship("UmbrellaHistory", back_populates="user")
 
@@ -25,7 +25,7 @@ class Umbrella(Base):
     id = Column(Integer, primary_key=True, index=True)
     status = Column(Enum('available', 'borrowed', 'lost'), default='available')
     location = Column(String(255))
-    owner_id = Column(Integer, ForeignKey('users.id'))
+    owner_name = Column(String(255), ForeignKey('users.name'))
 
     owner = relationship("User", back_populates="umbrellas")
 

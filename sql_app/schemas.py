@@ -13,7 +13,7 @@ class User(UserBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True 
 
 class UmbrellaBase(BaseModel):
     status: str
@@ -24,7 +24,7 @@ class UmbrellaCreate(UmbrellaBase):
 
 class Umbrella(UmbrellaBase):
     id: int
-    owner_id: Optional[int]
+    owner_name: Optional[str]
 
     class Config:
         orm_mode = True
@@ -42,7 +42,7 @@ class UmbrellaHistory(UmbrellaHistoryBase):
     returned_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attributes = True 
 
 class BorrowUmbrella(BaseModel):
     user_name: str
@@ -58,7 +58,7 @@ class UserWithUmbrella(BaseModel):
     status: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True 
 
 class BorrowReturnResponse(BaseModel):
     user_name : str
