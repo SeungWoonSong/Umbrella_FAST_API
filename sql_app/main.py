@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from . import crud, models, schemas
 from .database import SessionLocal, engine
@@ -14,6 +15,7 @@ user_tags = [{"name": "Users", "description": "Operations with users"}]
 umbrella_tags = [{"name": "Umbrellas", "description": "Manage umbrellas"}]
 history_tags = [{"name": "History", "description": "Manage History"}]
 Rent_Return = [{"name": "Rent", "description": "Manage Return and Rent"}]
+
 # Dependency
 def get_db():
     db = SessionLocal()
