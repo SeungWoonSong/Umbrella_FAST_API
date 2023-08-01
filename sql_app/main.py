@@ -75,11 +75,11 @@ def get_umbrellas(skip: int = 0, limit: int = 10, db: Session = Depends(get_db))
 def create_umbrella_history(history: schemas.UmbrellaHistoryCreate, db: Session = Depends(get_db)):
     return crud.create_umbrella_history(db=db, history=history)
 
-@app.get("/umbrella-history/{history_id}", response_model=schemas.UmbrellaHistory, tags=["History"])
-def get_umbrella_history(history_id: int, db: Session = Depends(get_db)):
-    return crud.get_umbrella_history(db, history_id=history_id)
-
 # 우산 대여 이력 조회
 @app.get("/umbrella-history/", response_model=List[schemas.UmbrellaHistory], tags=["History"])
 def read_umbrella_history(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     return crud.get_umbrella_history(db, skip=skip, limit=limit)
+
+@app.get("/umbrella-history/{user_name}", response_model=List[schemas.UmbrellaHistory], tags=["History"])
+def get_history_username(user_name: str, db: Session = Depends(get_db)):
+    return crud.get_histroy_username(user_name, db)

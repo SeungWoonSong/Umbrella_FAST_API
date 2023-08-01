@@ -33,9 +33,6 @@ def create_user(db: Session, user: schemas.UserCreate):
 def get_users(db: Session, skip: int = 0, limit: int = 10):
     return db.query(models.User).offset(skip).limit(limit).all()
 
-def get_user(db: Session, user_id: int):
-    return db.query(models.User).filter(models.User.id == user_id).first()
-
 # 우산 생성
 def create_umbrella(db: Session, umbrella: schemas.UmbrellaCreate):
     db_umbrella = models.Umbrella(**umbrella.dict())
@@ -77,7 +74,7 @@ def get_user_with_umbrella(db: Session, user_name: str):
     user = schemas.User.from_orm(user_db) # User ORM 객체를 Pydantic 모델로 변환
     umbrella = schemas.Umbrella.from_orm(umbrella_db) if umbrella_db else None # Umbrella ORM 객체를 Pydantic 모델로 변환
 
-    if umbrella:
+    if umbrella and umbrella.status == 'borrowed':
         return schemas.UserWithUmbrella(user=user, umbrella=umbrella, status="borrowed")
     else:
         return schemas.UserWithUmbrella(user=user, umbrella=None, status="available")
@@ -129,4 +126,12 @@ def return_umbrella(db: Session, return_data: schemas.ReturnUmbrella):
 
     return {"user_name": user.name, "umbrella_id": umbrella.id}
 
+def get_histroy_username(user_name : str, db: Session):
+    user = db.query(models.User).filter(models.User.name == user_name).first()
+    if user is None:
+        raise HTTPException(status_code=400, detail="사용자를 찾을 수 없습니다.")
+    umbrella_history = db.query(models.UmbrellaHistory).filter(
+        models.UmbrellaHistory.user_name == user_name
+    ).all()
+    return umbrella_history
 # 'available', 'borrowed', 'lost'
