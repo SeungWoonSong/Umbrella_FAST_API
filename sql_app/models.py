@@ -2,15 +2,19 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Enum, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from .database import Base
-import datetime
+from pytz import timezone
+from datetime import datetime
+
+
 
 Base = declarative_base()
+KST = timezone('Asia/Seoul')
 
 class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255))
+    name = Column(String(255), unique=True)
     email = Column(String(255), unique=True, index=True)
     umbrellas = relationship("Umbrella", back_populates="owner")
     history = relationship("UmbrellaHistory", back_populates="user")
@@ -31,7 +35,7 @@ class UmbrellaHistory(Base):
     id = Column(Integer, primary_key=True, index=True)
     umbrella_id = Column(Integer, ForeignKey('umbrellas.id'), nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    borrowed_at = Column(DateTime, default=datetime.datetime.utcnow + datetime.timedelta(hours=9))
+    borrowed_at = Column(DateTime, default=datetime.now(timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S'))
     returned_at = Column(DateTime)
 
     umbrella = relationship("Umbrella")

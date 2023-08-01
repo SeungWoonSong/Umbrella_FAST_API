@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
-
+from pytz import timezone
+from datetime import datetime
 # 유저 생성
 def create_user(db: Session, user: schemas.UserCreate):
     db_user = models.User(**user.dict())
@@ -66,7 +67,7 @@ def borrow_umbrella(db: Session, borrow_data: schemas.BorrowUmbrella):
     umbrella_history = models.UmbrellaHistory(
         umbrella_id=borrow_data.umbrella_id,
         user_id=borrow_data.user_id,
-        borrowed_at=datetime.now()
+        borrowed_at=datetime.now(timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')
     )
     db.add(umbrella_history)
     db.commit()
@@ -84,7 +85,7 @@ def return_umbrella(db: Session, return_data: schemas.ReturnUmbrella):
         models.UmbrellaHistory.umbrella_id == return_data.umbrella_id,
         models.UmbrellaHistory.returned_at == None
     ).first()
-    umbrella_history.returned_at = datetime.now()
+    umbrella_history.returned_at = datetime.now(timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')
 
     db.commit()
 
