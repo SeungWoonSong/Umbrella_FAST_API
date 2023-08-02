@@ -5,11 +5,7 @@ from . import models, schemas
 from pytz import timezone
 from datetime import datetime
 
-import logging
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 # 유저 생성
 def create_user(db: Session, user: schemas.UserCreate):
     # 동일한 이름을 가진 사용자가 있는지 확인
@@ -122,7 +118,6 @@ def borrow_umbrella(db: Session, umbrella_id: int, username: str):
     return {"user_name": user.name, "umbrella_id": umbrella.id}
 
 def return_umbrella(db: Session, umbrella_id: int, username: str):
-    logger.debug("IN return_umbrella")
     user = db.query(models.User).filter(models.User.name == username).first()
     if user is None:
         raise HTTPException(status_code=400, detail="사용자를 찾을 수 없습니다.")
@@ -147,7 +142,6 @@ def return_umbrella(db: Session, umbrella_id: int, username: str):
     return {"user_name": user.name, "umbrella_id": umbrella.id}
 
 def get_histroy_username(user_name : str, db: Session):
-    logger.debug("IN get_histroy_username")
     user = db.query(models.User).filter(models.User.name == user_name).first()
     if user is None:
         raise HTTPException(status_code=400, detail="사용자를 찾을 수 없습니다.")
@@ -157,7 +151,6 @@ def get_histroy_username(user_name : str, db: Session):
     return umbrella_history
 
 def get_histroy_umbrella_id(umbrella_id : int, db: Session):
-    logger.debug("IN get_histroy_umbrella_id")
     umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == umbrella_id).first()
     if umbrella is None:
         raise HTTPException(status_code=400, detail="우산을 찾을 수 없습니다.")
