@@ -96,8 +96,15 @@ def callback(code: str = None, db: Session = Depends(get_db)):
     #if no user in db, create user
     if crud.get_user(db, user_info["username"]) is None:
         crud.create_user(db, schemas.UserCreate(name=user_info["username"], email=user_info["email"]))
+    redirect_url = "https://openumbrella.site/jwt"
+
+# , httponly=True
+    headers = {'jwt_token': jwt_token}
+    response = RedirectResponse(url=redirect_url, headers=headers)
     
-    return {"jwt_token": jwt_token}
+
+    return response
+    # return {"jwt_token": jwt_token}
 
 @app.get("/me", tags=["Login"])
 def me(payload: dict = Depends(decode_token)):
