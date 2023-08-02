@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from . import crud, models, schemas, login
+from . import crud, models, schemas, login, weather
 from .database import SessionLocal, engine
 from typing import List
 import jwt
@@ -27,6 +27,7 @@ umbrella_tags = [{"name": "Umbrellas", "description": "Manage umbrellas"}]
 history_tags = [{"name": "History", "description": "Manage History"}]
 Rent_Return = [{"name": "Rent", "description": "Manage Return and Rent"}]
 Login = [{"name": "Login", "description": "Manage Login"}]
+Weather = [{"name": "Weather", "description": "Get Weather"}]
 
 #CORS
 origins = [
@@ -184,3 +185,7 @@ def get_history_username(user_name: str, db: Session = Depends(get_db)):
 def get_history_umbrella_id(umbrella_id: int, db: Session = Depends(get_db)):
     return crud.get_histroy_umbrella_id(umbrella_id, db)
 # @app.get("/weather")
+
+@app.get("/weather", tags=["Weather"])
+def get_weather():
+    return weather.get_weather()
