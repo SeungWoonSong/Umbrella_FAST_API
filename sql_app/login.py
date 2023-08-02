@@ -4,6 +4,14 @@ from dotenv import load_dotenv
 import requests
 import jwt
 from fastapi import HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 load_dotenv()
 CLIENT_ID = os.getenv("CLIENT_ID")
@@ -27,17 +35,27 @@ def get_token(code: str):
     }
     response = requests.post(TOKEN_URL, data=payload)
     if response.status_code != 200:
-        raise HTTPException(status_code=400, detail="Failed to get token")
+        raise HTTPException(status_code=400, detail="토큰 발급에 실패했습니다.")
     return response.json().get("access_token")
 
 def get_user_name(token: str):
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(USER_INFO_URL, headers=headers)
+    # logger.debug(response.json())
     if response.status_code != 200:
-        raise HTTPException(status_code=400, detail="Failed to get user info")
-    return response.json().get("name")
+        raise HTTPException(status_code=400, detail="사용자 정보를 가져올 수 없습니다.")
+    return {"username" : response.json().get("login"), "email" : response.json().get("email")}
 
-def generate_jwt_token(username: str):
-    payload = {"username": username}
+def generate_jwt_token(user_info: dict):
+    logger.debug(user_info)
+    payload = {"username": user_info["username"], "email": user_info["email"]}
     token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
     return token
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        # userinfo = payload.get("username")
+    except:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return payload

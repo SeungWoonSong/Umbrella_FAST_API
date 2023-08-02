@@ -8,6 +8,7 @@ from typing import List
 #OAuth2
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
 
 #CORS
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +17,14 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
+# Bearer
+get_bearer_token = HTTPBearer(auto_error=False)
+
+#Logger
+import logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 # Tags
 user_tags = [{"name": "Users", "description": "Operations with users"}]
@@ -60,9 +69,10 @@ def callback(code: str = None):
         raise HTTPException(status_code=400, detail="Code not provided")
     
     token = login.get_token(code)
-    username = login.get_user_name(token)
-    jwt_token = login.generate_jwt_token(username)
-
+    user_info = login.get_user_name(token)
+    jwt_token = login.generate_jwt_token(user_info)
+    
+    # logger.debug("DECODED", login.get_current_user(jwt_token))
     return {"jwt_token": jwt_token}
 
 
@@ -87,12 +97,13 @@ def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
 
 # 핵심 로직(대여 / 반납)
 @app.post("/umbrellas/borrow", response_model=schemas.BorrowReturnResponse, tags=["Rent"])
-def borrow_umbrella(borrow_data: schemas.BorrowUmbrella, db: Session = Depends(get_db)):
-    return crud.borrow_umbrella(db, borrow_data=borrow_data)
+def borrow_umbrella(umbrella_id: int, userinfo = Depends(login.get_current_user), db: Session = Depends(get_db)):
+    logger.debug(userinfo)
+    return crud.borrow_umbrella(db, umbrella_id, userinfo["username"])
 
 @app.post("/umbrellas/return", response_model=schemas.BorrowReturnResponse, tags=["Rent"])
-def return_umbrella(return_data: schemas.ReturnUmbrella, db: Session = Depends(get_db)):
-    return crud.return_umbrella(db, return_data=return_data)
+def return_umbrella(umbrella_id: int, userinfo = Depends(login.get_current_user), db: Session = Depends(get_db)):
+    return crud.return_umbrella(db, umbrella_id, userinfo["username"])
 
 # 사용자 생성
 

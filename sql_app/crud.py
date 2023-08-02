@@ -79,13 +79,14 @@ def get_user_with_umbrella(db: Session, user_name: str):
     else:
         return schemas.UserWithUmbrella(user=user, umbrella=None, status="available")
 
-def borrow_umbrella(db: Session, borrow_data: schemas.BorrowUmbrella):
-    logger.debug("IN borrow_umbrella")
-    user = db.query(models.User).filter(models.User.name == borrow_data.user_name).first()
+def borrow_umbrella(db: Session, umbrella_id: int, username: str):
+    user = db.query(models.User).filter(models.User.name == username).first()
+    # 사용자 존재여부 확인
     if user is None:
         raise HTTPException(status_code=400, detail="사용자를 찾을 수 없습니다.")
 
-    umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == borrow_data.umbrella_id).first()
+    umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == umbrella_id).first()
+    # 우산 존재 여부 확인
     if umbrella is None:
         raise HTTPException(status_code=400, detail="우산을 찾을 수 없습니다.")
 
@@ -101,8 +102,8 @@ def borrow_umbrella(db: Session, borrow_data: schemas.BorrowUmbrella):
     umbrella.owner_name = user.name
     
     umbrella_history = models.UmbrellaHistory(
-        umbrella_id=borrow_data.umbrella_id,
-        user_name=borrow_data.user_name,
+        umbrella_id=umbrella_id,
+        user_name=username,
         borrowed_at=datetime.now(timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')
     )
     db.add(umbrella_history)
@@ -110,22 +111,22 @@ def borrow_umbrella(db: Session, borrow_data: schemas.BorrowUmbrella):
 
     return {"user_name": user.name, "umbrella_id": umbrella.id}
 
-def return_umbrella(db: Session, return_data: schemas.ReturnUmbrella):
+def return_umbrella(db: Session, umbrella_id: int, username: str):
     logger.debug("IN return_umbrella")
-    user = db.query(models.User).filter(models.User.name == return_data.user_name).first()
+    user = db.query(models.User).filter(models.User.name == username).first()
     if user is None:
         raise HTTPException(status_code=400, detail="사용자를 찾을 수 없습니다.")
-    umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == return_data.umbrella_id).first()
+    umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == umbrella_id).first()
     if umbrella is None:
         raise HTTPException(status_code=400, detail="우산을 찾을 수 없습니다.")
     
     umbrella_history = db.query(models.UmbrellaHistory).filter(
-        models.UmbrellaHistory.umbrella_id == return_data.umbrella_id,
+        models.UmbrellaHistory.umbrella_id == umbrella_id,
         models.UmbrellaHistory.returned_at == None
     ).first()
     if umbrella_history is None:
         raise HTTPException(status_code=400, detail="대여 이력을 찾을 수 없습니다.")
-    if umbrella_history.user_name != return_data.user_name:
+    if umbrella_history.user_name != username:
         raise HTTPException(status_code=400, detail="해당 우산을 대여한 사용자가 아닙니다.")
     
     umbrella.status = "available"

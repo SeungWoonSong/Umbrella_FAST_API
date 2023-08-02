@@ -43,14 +43,6 @@ class UmbrellaHistory(UmbrellaHistoryBase):
     class Config:
         from_attributes = True 
 
-class BorrowUmbrella(BaseModel):
-    user_name: str
-    umbrella_id: int
-
-class ReturnUmbrella(BaseModel):
-    user_name: str
-    umbrella_id: int
-
 class UserWithUmbrella(BaseModel):
     user: User
     umbrella: Optional[Umbrella]
