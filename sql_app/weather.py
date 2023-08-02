@@ -1,5 +1,4 @@
 from dotenv import load_dotenv
-from functools import lru_cache
 import time
 import requests
 import os
