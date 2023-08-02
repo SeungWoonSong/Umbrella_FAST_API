@@ -1,3 +1,6 @@
 __pycache__/*
 __pycache__
 sql_app/.env
+test/__pycache__
+test/.pytest_cache
+.pytest_cache
