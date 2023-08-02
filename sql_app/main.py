@@ -1,11 +1,18 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from . import crud, models, schemas
+from . import crud, models, schemas, login
 from .database import SessionLocal, engine
 from typing import List
 
+#OAuth2
+from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
 
+#CORS
+from fastapi.middleware.cors import CORSMiddleware
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
@@ -15,6 +22,24 @@ user_tags = [{"name": "Users", "description": "Operations with users"}]
 umbrella_tags = [{"name": "Umbrellas", "description": "Manage umbrellas"}]
 history_tags = [{"name": "History", "description": "Manage History"}]
 Rent_Return = [{"name": "Rent", "description": "Manage Return and Rent"}]
+Login = [{"name": "Login", "description": "Manage Login"}]
+
+#CORS
+origins = [
+    "http://localhost:4200",
+    "https://localhost:4200",
+    "http://openumbrella.site",
+    "http://openumbrella.site",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Dependency
 def get_db():
@@ -23,6 +48,24 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# LOGIN LOGIC
+@app.get("/auth_url", tags=["Login"])
+def auth_url():
+    return login.login()
+
+@app.get("/callback")
+def callback(code: str = None):
+    if code is None:
+        raise HTTPException(status_code=400, detail="Code not provided")
+    
+    token = login.get_token(code)
+    username = login.get_user_name(token)
+    jwt_token = login.generate_jwt_token(username)
+
+    return {"jwt_token": jwt_token}
+
+
 
 @app.get("/", include_in_schema=False)
 def read_root():
@@ -83,3 +126,8 @@ def read_umbrella_history(skip: int = 0, limit: int = 10, db: Session = Depends(
 @app.get("/umbrella-history/{user_name}", response_model=List[schemas.UmbrellaHistory], tags=["History"])
 def get_history_username(user_name: str, db: Session = Depends(get_db)):
     return crud.get_histroy_username(user_name, db)
+
+@app.get("/umbrella-history-id/{umbrella_id}", response_model=List[schemas.UmbrellaHistory], tags=["History"])
+def get_history_umbrella_id(umbrella_id: int, db: Session = Depends(get_db)):
+    return crud.get_histroy_umbrella_id(umbrella_id, db)
+# @app.get("/weather")
