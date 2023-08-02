@@ -1,6 +1,5 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Enum, DateTime
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, declarative_base
 from .database import Base
 from pytz import timezone
 from datetime import datetime
