@@ -96,11 +96,10 @@ def callback(code: str = None, db: Session = Depends(get_db)):
     #if no user in db, create user
     if crud.get_user(db, user_info["username"]) is None:
         crud.create_user(db, schemas.UserCreate(name=user_info["username"], email=user_info["email"]))
-    redirect_url = "https://openumbrella.site/jwt"
+    redirect_url = f"https://openumbrella.site/jwt?jwt_token={jwt_token}"
 
 # , httponly=True
-    headers = {'jwt_token': jwt_token}
-    response = RedirectResponse(url=redirect_url, headers=headers)
+    response = RedirectResponse(url=redirect_url)
     
 
     return response
