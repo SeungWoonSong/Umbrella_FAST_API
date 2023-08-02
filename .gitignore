@@ -4,3 +4,4 @@ sql_app/.env
 test/__pycache__
 test/.pytest_cache
 .pytest_cache
+*.pem
