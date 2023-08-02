@@ -7,7 +7,6 @@ from typing import List
 import jwt
 from dotenv import load_dotenv
 import os
-
 #OAuth2
 from fastapi import Depends
 from fastapi.security.http import HTTPBearer
@@ -34,7 +33,7 @@ origins = [
     "http://localhost:4200",
     "https://localhost:4200",
     "http://openumbrella.site",
-    "http://openumbrella.site",
+    "https://openumbrella.site",
 ]
 
 app.add_middleware(
@@ -48,10 +47,11 @@ app.add_middleware(
 # JWT
 get_user_token = HTTPBearer(auto_error=False)
 
+
 def decode_token(token: str = Depends(get_user_token)):
     SECRET_KEY = JWT_SECRET
     ALGORITHM = "HS256"
-    if token.credentials is None:
+    if token is None or token.credentials is None:
         raise HTTPException(
             status_code=401,
             detail="토큰이 제공되지 않았습니다.",
@@ -66,8 +66,6 @@ def decode_token(token: str = Depends(get_user_token)):
             detail="제공한 토큰이 유효하지 않습니다.",  
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-
 # Dependency
 def get_db():
     db = SessionLocal()
@@ -109,7 +107,9 @@ def me(payload: dict = Depends(decode_token)):
 
 
 @app.post("/users/", response_model=schemas.User, tags=["Users"])
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+def create_user_admin(user: schemas.UserCreate, userinfo = Depends(decode_token), db: Session = Depends(get_db)):
+    if userinfo["username"] not in ["susong", "seongyle"]:
+        raise HTTPException(status_code=401, detail="권한이 없습니다.")
     return crud.create_user(db=db, user=user)
 
 # 사용자 조회
