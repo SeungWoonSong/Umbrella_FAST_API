@@ -21,14 +21,6 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
-# Bearer
-
-
-#Logger
-import logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 # Tags
 user_tags = [{"name": "Users", "description": "Operations with users"}]
@@ -114,6 +106,8 @@ def me(payload: dict = Depends(decode_token)):
     return payload["username"]
 
 
+
+
 @app.post("/users/", response_model=schemas.User, tags=["Users"])
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return crud.create_user(db=db, user=user)
@@ -128,15 +122,19 @@ def read_user_with_umbrella(user_name: str, db: Session = Depends(get_db)):
 def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     return crud.get_users(db, skip=skip, limit=limit)
 
+
+
+
 # 핵심 로직(대여 / 반납)
 @app.post("/umbrellas/borrow", response_model=schemas.BorrowReturnResponse, tags=["Rent"])
 def borrow_umbrella(umbrella_id: int, userinfo = Depends(decode_token), db: Session = Depends(get_db)):
-    logger.debug(userinfo)
     return crud.borrow_umbrella(db, umbrella_id, userinfo["username"])
 
 @app.post("/umbrellas/return", response_model=schemas.BorrowReturnResponse, tags=["Rent"])
 def return_umbrella(umbrella_id: int, userinfo = Depends(decode_token), db: Session = Depends(get_db)):
     return crud.return_umbrella(db, umbrella_id, userinfo["username"])
+
+
 
 
 # 우산 제작
@@ -157,6 +155,8 @@ def read_umbrella(umbrella_id: int, db: Session = Depends(get_db)):
 @app.get("/umbrellas/", response_model=List[schemas.Umbrella], tags=["Umbrellas"])
 def get_umbrellas(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     return crud.get_umbrellas(db, skip=skip, limit=limit)
+
+
 
 # UmbrellaHistory
 @app.post("/umbrella-history/", response_model=schemas.UmbrellaHistory, tags=["History"])
