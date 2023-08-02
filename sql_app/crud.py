@@ -9,9 +9,9 @@ from datetime import datetime
 # 유저 생성
 def create_user(db: Session, user: schemas.UserCreate):
     # 동일한 이름을 가진 사용자가 있는지 확인
-    existing_user = db.query(models.User).filter(models.User.name == user.name).first()
-    if existing_user:
-        # 동일한 이름을 가진 사용자가 있으면 에러 반환
+    existing_user = db.query(models.User).filter((models.User.name == user.name) | (models.User.email == user.email)).first()
+    # 동일한 이름을 가진 사용자가 있으면 에러 반환
+    if existing_user is not None:
         raise HTTPException(status_code=400, detail="이미 동일한 이름을 가진 사용자가 있습니다.")
 
     db_user = models.User(**user.dict())
@@ -158,4 +158,3 @@ def get_histroy_umbrella_id(umbrella_id : int, db: Session):
         models.UmbrellaHistory.umbrella_id == umbrella_id
     ).all()
     return umbrella_history
-# 'available', 'borrowed', 'lost'
