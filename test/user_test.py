@@ -3,7 +3,7 @@ from sql_app.main import app
 
 client = TestClient(app)
 
-token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InN1c29uZyIsImVtYWlsIjoic3Vzb25nQHN0dWRlbnQuNDJzZW91bC5rciJ9.MW1_KxAgPAgJTOVEwwf4VghLS_ucbGXFzC91tdR-N8k"  # 실제 사용할 토큰
+token = ""  # 실제 사용할 토큰
 headers = {"Authorization": f"Bearer {token}"}
 
 def test_read_root():
@@ -20,6 +20,8 @@ def test_read_users():
     # 응답 내용이 정확한지 확인하는 추가 로직이 필요할 수 있습니다.
 
 def test_make_user():
+    response = client.post("/users/", headers=headers,json={"name": "test2", "email": "asd@naver.com"})
+    assert response.status_code == 401
     response = client.post("/users/", json={"name": "test2", "email": "asd@naver.com"})
     assert response.status_code == 401
 

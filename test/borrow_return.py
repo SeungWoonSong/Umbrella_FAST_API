@@ -3,7 +3,7 @@ from sql_app.main import app
 
 client = TestClient(app)
 
-token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InN1c29uZyIsImVtYWlsIjoic3Vzb25nQHN0dWRlbnQuNDJzZW91bC5rciJ9.MW1_KxAgPAgJTOVEwwf4VghLS_ucbGXFzC91tdR-N8k"  # 실제 사용할 토큰
+token = ""  # 실제 사용할 토큰
 headers = {"Authorization": f"Bearer {token}"}
 
 
