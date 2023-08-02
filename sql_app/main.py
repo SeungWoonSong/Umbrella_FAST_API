@@ -4,21 +4,25 @@ from sqlalchemy.orm import Session
 from . import crud, models, schemas, login
 from .database import SessionLocal, engine
 from typing import List
+import jwt
+from dotenv import load_dotenv
+import os
 
 #OAuth2
 from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
-from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security.http import HTTPBearer
 
 #CORS
 from fastapi.middleware.cors import CORSMiddleware
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+# ENV
+load_dotenv()
+JWT_SECRET = os.getenv("JWT_SECRET")
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 # Bearer
-get_bearer_token = HTTPBearer(auto_error=False)
+
 
 #Logger
 import logging
@@ -49,6 +53,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# JWT
+get_user_token = HTTPBearer(auto_error=False)
+
+def decode_token(token: str = Depends(get_user_token)):
+    SECRET_KEY = JWT_SECRET
+    ALGORITHM = "HS256"
+    if token.credentials is None:
+        raise HTTPException(
+            status_code=401,
+            detail="토큰이 제공되지 않았습니다.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    try:
+        payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=401,
+            detail="제공한 토큰이 유효하지 않습니다.",  
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
 
 # Dependency
 def get_db():
@@ -58,28 +84,35 @@ def get_db():
     finally:
         db.close()
 
+@app.get("/", include_in_schema=False)
+def read_root():
+    return RedirectResponse(url="/docs")
+
+
 # LOGIN LOGIC
 @app.get("/auth_url", tags=["Login"])
 def auth_url():
     return login.login()
 
-@app.get("/callback")
-def callback(code: str = None):
+
+@app.get("/callback", tags=["Login"])
+def callback(code: str = None, db: Session = Depends(get_db)):
     if code is None:
         raise HTTPException(status_code=400, detail="Code not provided")
     
     token = login.get_token(code)
-    user_info = login.get_user_name(token)
+    user_info = login.get_user_42name(token)
     jwt_token = login.generate_jwt_token(user_info)
+    #if no user in db, create user
+    if crud.get_user(db, user_info["username"]) is None:
+        crud.create_user(db, schemas.UserCreate(name=user_info["username"], email=user_info["email"]))
     
-    # logger.debug("DECODED", login.get_current_user(jwt_token))
     return {"jwt_token": jwt_token}
 
+@app.get("/me", tags=["Login"])
+def me(payload: dict = Depends(decode_token)):
+    return payload["username"]
 
-
-@app.get("/", include_in_schema=False)
-def read_root():
-    return RedirectResponse(url="/docs")
 
 @app.post("/users/", response_model=schemas.User, tags=["Users"])
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -97,19 +130,20 @@ def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
 
 # 핵심 로직(대여 / 반납)
 @app.post("/umbrellas/borrow", response_model=schemas.BorrowReturnResponse, tags=["Rent"])
-def borrow_umbrella(umbrella_id: int, userinfo = Depends(login.get_current_user), db: Session = Depends(get_db)):
+def borrow_umbrella(umbrella_id: int, userinfo = Depends(decode_token), db: Session = Depends(get_db)):
     logger.debug(userinfo)
     return crud.borrow_umbrella(db, umbrella_id, userinfo["username"])
 
 @app.post("/umbrellas/return", response_model=schemas.BorrowReturnResponse, tags=["Rent"])
-def return_umbrella(umbrella_id: int, userinfo = Depends(login.get_current_user), db: Session = Depends(get_db)):
+def return_umbrella(umbrella_id: int, userinfo = Depends(decode_token), db: Session = Depends(get_db)):
     return crud.return_umbrella(db, umbrella_id, userinfo["username"])
 
-# 사용자 생성
 
 # 우산 제작
 @app.post("/umbrellas/", response_model=schemas.Umbrella, tags=["Umbrellas"])
-def create_umbrella(umbrella: schemas.UmbrellaCreate, db: Session = Depends(get_db)):
+def create_umbrella(umbrella: schemas.UmbrellaCreate, userinfo = Depends(decode_token), db: Session = Depends(get_db)):
+    if userinfo["username"] not in ["susong", "seongyle"]:
+        raise HTTPException(status_code=401, detail="권한이 없습니다.")
     return crud.create_umbrella(db=db, umbrella=umbrella)
 
 # 우산 상태 조회
@@ -126,7 +160,9 @@ def get_umbrellas(skip: int = 0, limit: int = 10, db: Session = Depends(get_db))
 
 # UmbrellaHistory
 @app.post("/umbrella-history/", response_model=schemas.UmbrellaHistory, tags=["History"])
-def create_umbrella_history(history: schemas.UmbrellaHistoryCreate, db: Session = Depends(get_db)):
+def create_umbrella_history(history: schemas.UmbrellaHistoryCreate, userinfo = Depends(decode_token), db: Session = Depends(get_db)):
+    if userinfo["username"] not in ["susong", "seongyle"]:
+        raise HTTPException(status_code=401, detail="권한이 없습니다.")
     return crud.create_umbrella_history(db=db, history=history)
 
 # 우산 대여 이력 조회

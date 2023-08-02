@@ -33,6 +33,16 @@ def create_user(db: Session, user: schemas.UserCreate):
 def get_users(db: Session, skip: int = 0, limit: int = 10):
     return db.query(models.User).offset(skip).limit(limit).all()
 
+def get_user(db: Session, username: str):
+    return db.query(models.User).filter(models.User.name == username).first()
+
+def create_user(db, user: schemas.UserCreate):
+    db_user = models.User(**user.dict())
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
 # 우산 생성
 def create_umbrella(db: Session, umbrella: schemas.UmbrellaCreate):
     db_umbrella = models.Umbrella(**umbrella.dict())
