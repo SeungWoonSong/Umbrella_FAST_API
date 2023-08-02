@@ -25,7 +25,7 @@ def create_user(db: Session, user: schemas.UserCreate):
     except IntegrityError:
         # 중복 키 제약 조건과 같은 데이터베이스 오류 처리
         db.rollback()
-        raise ValueError("이미 동일한 이름을 가진 사용자가 있습니다.")
+        raise HTTPException(status_code=400, detail="이미 동일한 이름을 가진 사용자가 있습니다.")
     db.refresh(db_user)
     return db_user
 
@@ -80,6 +80,7 @@ def get_user_with_umbrella(db: Session, user_name: str):
         return schemas.UserWithUmbrella(user=user, umbrella=None, status="available")
 
 def borrow_umbrella(db: Session, borrow_data: schemas.BorrowUmbrella):
+    logger.debug("IN borrow_umbrella")
     user = db.query(models.User).filter(models.User.name == borrow_data.user_name).first()
     if user is None:
         raise HTTPException(status_code=400, detail="사용자를 찾을 수 없습니다.")
@@ -88,8 +89,13 @@ def borrow_umbrella(db: Session, borrow_data: schemas.BorrowUmbrella):
     if umbrella is None:
         raise HTTPException(status_code=400, detail="우산을 찾을 수 없습니다.")
 
-    if user.umbrellas is not None:
-        raise HTTPException(status_code=400, detail="우산을 2개 빌릴 수는 없습니다.")
+    user_umbrella = db.query(models.Umbrella).filter(models.Umbrella.owner_name == user.name).first()
+    # 우산 이미 빌렸는지 확인하기
+    if umbrella.status == "borrowed":
+        raise HTTPException(status_code=400, detail="이미 빌려간 우산입니다.")
+    if user_umbrella is not None and user_umbrella.status == "borrowed":
+        raise HTTPException(status_code=400, detail="2개의 우산을 빌릴 수 없습니다")
+
 
     umbrella.status = "borrowed"
     umbrella.owner_name = user.name
@@ -105,21 +111,24 @@ def borrow_umbrella(db: Session, borrow_data: schemas.BorrowUmbrella):
     return {"user_name": user.name, "umbrella_id": umbrella.id}
 
 def return_umbrella(db: Session, return_data: schemas.ReturnUmbrella):
+    logger.debug("IN return_umbrella")
     user = db.query(models.User).filter(models.User.name == return_data.user_name).first()
     if user is None:
         raise HTTPException(status_code=400, detail="사용자를 찾을 수 없습니다.")
     umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == return_data.umbrella_id).first()
     if umbrella is None:
         raise HTTPException(status_code=400, detail="우산을 찾을 수 없습니다.")
-    if user.umbrellas is None:
-        raise HTTPException(status_code=400, detail="빌린 우산이 없습니다.")
-
-    umbrella.status = "available"
     
     umbrella_history = db.query(models.UmbrellaHistory).filter(
         models.UmbrellaHistory.umbrella_id == return_data.umbrella_id,
         models.UmbrellaHistory.returned_at == None
     ).first()
+    if umbrella_history is None:
+        raise HTTPException(status_code=400, detail="대여 이력을 찾을 수 없습니다.")
+    if umbrella_history.user_name != return_data.user_name:
+        raise HTTPException(status_code=400, detail="해당 우산을 대여한 사용자가 아닙니다.")
+    
+    umbrella.status = "available"
     umbrella_history.returned_at = datetime.now(timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')
 
     db.commit()
@@ -127,11 +136,22 @@ def return_umbrella(db: Session, return_data: schemas.ReturnUmbrella):
     return {"user_name": user.name, "umbrella_id": umbrella.id}
 
 def get_histroy_username(user_name : str, db: Session):
+    logger.debug("IN get_histroy_username")
     user = db.query(models.User).filter(models.User.name == user_name).first()
     if user is None:
         raise HTTPException(status_code=400, detail="사용자를 찾을 수 없습니다.")
     umbrella_history = db.query(models.UmbrellaHistory).filter(
         models.UmbrellaHistory.user_name == user_name
+    ).all()
+    return umbrella_history
+
+def get_histroy_umbrella_id(umbrella_id : int, db: Session):
+    logger.debug("IN get_histroy_umbrella_id")
+    umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == umbrella_id).first()
+    if umbrella is None:
+        raise HTTPException(status_code=400, detail="우산을 찾을 수 없습니다.")
+    umbrella_history = db.query(models.UmbrellaHistory).filter(
+        models.UmbrellaHistory.umbrella_id == umbrella_id
     ).all()
     return umbrella_history
 # 'available', 'borrowed', 'lost'
