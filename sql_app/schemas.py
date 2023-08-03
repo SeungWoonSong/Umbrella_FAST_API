@@ -2,24 +2,30 @@ from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 
+
 class UserBase(BaseModel):
     name: str
     email: str
 
+
 class UserCreate(UserBase):
     pass
+
 
 class User(UserBase):
     id: int
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
 
 class UmbrellaBase(BaseModel):
-    status: str = 'available'
+    status: str = "available"
+
 
 class UmbrellaCreate(UmbrellaBase):
     pass
+
 
 class Umbrella(UmbrellaBase):
     id: int
@@ -28,20 +34,24 @@ class Umbrella(UmbrellaBase):
     class Config:
         from_attributes = True
 
+
 class UmbrellaHistoryBase(BaseModel):
     umbrella_id: int
     user_name: str
     borrowed_at: datetime
 
+
 class UmbrellaHistoryCreate(UmbrellaHistoryBase):
     pass
+
 
 class UmbrellaHistory(UmbrellaHistoryBase):
     id: int
     returned_at: Optional[datetime]
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
 
 class UserWithUmbrella(BaseModel):
     user: User
@@ -49,8 +59,18 @@ class UserWithUmbrella(BaseModel):
     status: str
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
 
 class BorrowReturnResponse(BaseModel):
-    user_name : str
-    umbrella_id : int
+    user_name: str
+    umbrella_id: int
+
+
+class WeatherCondition(BaseModel):
+    rain_probability: float
+    uv_index: float
+    uv_index_category: str
+
+    class Config:
+        from_attributes = True
