@@ -172,6 +172,10 @@ def get_histroy_umbrella_id(umbrella_id : int, db: Session):
     ).all()
     return umbrella_history
 
+def get_all_history_count(db: Session):
+    umbrella_history = db.query(models.UmbrellaHistory).all()
+    return len(umbrella_history)
+
 def lost_umbrella(db: Session, umbrella_id : int):
     umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == umbrella_id).first()
     if umbrella is None:
