@@ -74,14 +74,21 @@ def get_umbrella_history(db: Session, skip: int = 0, limit: int = 10):
     return db.query(models.UmbrellaHistory).offset(skip).limit(limit).all()
 
 def get_user_with_umbrella(db: Session, user_name: str):
-    user_db = db.query(models.User).filter(models.User.name == user_name).first()
-    umbrella_db = db.query(models.Umbrella).filter(models.Umbrella.owner_name == user_db.name).first()
+    user = db.query(models.User).filter(models.User.name == user_name).first()
 
-    user = schemas.User.from_orm(user_db) # User ORM 객체를 Pydantic 모델로 변환
-    umbrella = schemas.Umbrella.from_orm(umbrella_db) if umbrella_db else None # Umbrella ORM 객체를 Pydantic 모델로 변환
-
-    if umbrella and umbrella.status == 'borrowed':
-        return schemas.UserWithUmbrella(user=user, umbrella=umbrella, status="borrowed")
+    # 사용자가 존재하는지 확인
+    if not user:
+        raise HTTPException(status_code=400, detail="사용자를 찾을 수 없습니다.")
+    
+    # 사용자가 빌린 모든 우산 가져오기
+    umbrellas = db.query(models.Umbrella).filter(models.Umbrella.owner_name == user_name).all()
+    
+    # borrowed 상태인 우산이 있는지 검사
+    borrowed_umbrellas = [umbrella for umbrella in umbrellas if umbrella.status == 'borrowed']
+    
+    if borrowed_umbrellas:
+        # borrowed 상태인 우산이 하나라도 있을 경우
+        return schemas.UserWithUmbrella(user=user, umbrella=borrowed_umbrellas[0], status="borrowed")
     else:
         return schemas.UserWithUmbrella(user=user, umbrella=None, status="available")
 
@@ -95,25 +102,31 @@ def borrow_umbrella(db: Session, umbrella_id: int, username: str):
     # 우산 존재 여부 확인
     if umbrella is None:
         raise HTTPException(status_code=400, detail="우산을 찾을 수 없습니다.")
-
-    user_umbrella = db.query(models.Umbrella).filter(models.Umbrella.owner_name == user.name).first()
+    user_umbrella = db.query(models.Umbrella).filter(models.Umbrella.owner_name == user.name, models.Umbrella.status == "borrowed").first()
     # 우산 이미 빌렸는지 확인하기
     if umbrella.status == "borrowed":
         raise HTTPException(status_code=400, detail="이미 빌려간 우산입니다.")
-    if user_umbrella is not None and user_umbrella.status == "borrowed":
+    if user_umbrella:
         raise HTTPException(status_code=400, detail="2개의 우산을 빌릴 수 없습니다")
 
+    try:
+        # 트랜잭션 시작
+        umbrella.status = "borrowed"
+        umbrella.owner_name = user.name
 
-    umbrella.status = "borrowed"
-    umbrella.owner_name = user.name
-    
-    umbrella_history = models.UmbrellaHistory(
-        umbrella_id=umbrella_id,
-        user_name=username,
-        borrowed_at=datetime.now(timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')
-    )
-    db.add(umbrella_history)
-    db.commit()
+        umbrella_history = models.UmbrellaHistory(
+            umbrella_id=umbrella_id,
+            user_name=username,
+            borrowed_at=datetime.now(timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')
+        )
+        db.add(umbrella_history)
+        # 트랜잭션 커밋
+        db.commit()
+
+    except:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="데이터베이스 오류")
+
 
     return {"user_name": user.name, "umbrella_id": umbrella.id}
 
@@ -158,3 +171,27 @@ def get_histroy_umbrella_id(umbrella_id : int, db: Session):
         models.UmbrellaHistory.umbrella_id == umbrella_id
     ).all()
     return umbrella_history
+
+def lost_umbrella(db: Session, umbrella_id : int):
+    umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == umbrella_id).first()
+    if umbrella is None:
+        raise HTTPException(status_code=400, detail="우산을 찾을 수 없습니다.")
+    if umbrella.status == "lost":
+        raise HTTPException(status_code=400, detail="이미 분실된 우산입니다.")
+    umbrella.status = "lost"
+    db.commit()
+    return umbrella
+
+def get_lost_umbrella(db: Session):
+    umbrella = db.query(models.Umbrella).filter(models.Umbrella.status == "lost").all()
+    return umbrella
+
+def restore_umbrella(db: Session, umbrella_id : int):
+    umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == umbrella_id).first()
+    if umbrella is None:
+        raise HTTPException(status_code=400, detail="우산을 찾을 수 없습니다.")
+    if umbrella.status == "available" or umbrella.status == "borrowed":
+        raise HTTPException(status_code=400, detail="분실된 우산이 아닙니다.")
+    umbrella.status = "available"
+    db.commit()
+    return umbrella
