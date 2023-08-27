@@ -240,7 +240,7 @@ def get_total_history(db: Session = Depends(get_db)):
 # 분실처리
 @app.get("/lost", response_model=List[schemas.Umbrella], tags=["Lost/Found"])
 def get_lost_umbrella(
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db)
 ):
     return crud.get_lost_umbrella(db)
 
