@@ -232,6 +232,15 @@ def get_history_umbrella_id(umbrella_id: int, db: Session = Depends(get_db)):
 
 
 # 분실처리
+@app.get("/lost", response_model=List[schemas.Umbrella], tags=["Lost/Found"])
+def get_lost_umbrella(
+    userinfo=Depends(decode_token),
+    db: Session = Depends(get_db),
+):
+    if userinfo["username"] not in ["susong", "seongyle", "jmaing"]:
+        raise HTTPException(status_code=401, detail="권한이 없습니다.")
+    return crud.get_lost_umbrella(db)
+
 @app.post("/lost/{umbrella_id}", response_model=schemas.Umbrella, tags=["Lost/Found"])
 def lost_umbrella(
     umbrella_id: int,
