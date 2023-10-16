@@ -106,9 +106,10 @@ def borrow_umbrella(db: Session, umbrella_id: int, username: str):
     # 우산 이미 빌렸는지 확인하기
     if umbrella.status == "borrowed":
         raise HTTPException(status_code=400, detail="이미 빌려간 우산입니다.")
+    if umbrella.status == "lost":
+        raise HTTPException(status_code=400, detail="분실된 우산입니다.")
     if user_umbrella:
         raise HTTPException(status_code=400, detail="2개의 우산을 빌릴 수 없습니다")
-
     try:
         # 트랜잭션 시작
         umbrella.status = "borrowed"
