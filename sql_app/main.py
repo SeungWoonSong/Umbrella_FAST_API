@@ -20,8 +20,8 @@ load_dotenv()
 JWT_SECRET = os.getenv("JWT_SECRET")
 
 models.Base.metadata.create_all(bind=engine)
-# app = FastAPI()
-app = FastAPI(debug=True)
+app = FastAPI()
+
 # Tags
 user_tags = [{"name": "Users", "description": "Operations with users"}]
 umbrella_tags = [{"name": "Umbrellas", "description": "Manage umbrellas"}]
@@ -60,7 +60,8 @@ def decode_token(token: str = Depends(get_user_token)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     try:
-        payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token.credentials, SECRET_KEY,
+                             algorithms=[ALGORITHM])
         return payload
     except jwt.PyJWTError:
         raise HTTPException(
@@ -101,7 +102,8 @@ def callback(code: str = None, db: Session = Depends(get_db)):
     # if no user in db, create user
     if crud.get_user(db, user_info["username"]) is None:
         crud.create_user(
-            db, schemas.UserCreate(name=user_info["username"], email=user_info["email"])
+            db, schemas.UserCreate(
+                name=user_info["username"], email=user_info["email"])
         )
     redirect_url = f"https://openumbrella.site/jwt?jwt_token={jwt_token}"
 
@@ -228,6 +230,7 @@ def get_history_username(user_name: str, db: Session = Depends(get_db)):
 def get_history_umbrella_id(umbrella_id: int, db: Session = Depends(get_db)):
     return crud.get_histroy_umbrella_id(umbrella_id, db)
 
+
 @app.get(
     "/total",
     tags=["History"],
@@ -236,13 +239,13 @@ def get_total_history(db: Session = Depends(get_db)):
     return crud.get_all_history_count(db)
 
 
-
 # 분실처리
 @app.get("/lost", response_model=List[schemas.Umbrella], tags=["Lost/Found"])
 def get_lost_umbrella(
     db: Session = Depends(get_db)
 ):
     return crud.get_lost_umbrella(db)
+
 
 @app.post("/lost/{umbrella_id}", response_model=schemas.Umbrella, tags=["Lost/Found"])
 def lost_umbrella(
@@ -254,6 +257,7 @@ def lost_umbrella(
         raise HTTPException(status_code=401, detail="권한이 없습니다.")
     return crud.lost_umbrella(db, umbrella_id)
 
+
 @app.post("/restore/{umbrella_id}", response_model=schemas.Umbrella, tags=["Lost/Found"])
 def lost_umbrella(
     umbrella_id: int,
@@ -264,7 +268,7 @@ def lost_umbrella(
         raise HTTPException(status_code=401, detail="권한이 없습니다.")
     return crud.restore_umbrella(db, umbrella_id)
 
+
 @app.get("/weather", response_model=schemas.WeatherCondition, tags=["Weather"])
 def get_weather():
     return weather.get_weather()
-
