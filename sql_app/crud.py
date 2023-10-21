@@ -18,11 +18,11 @@ def create_user(db: Session, user: schemas.UserCreate):
     db.add(db_user)
     try:
         db.commit()
+        db.refresh(db_user)
     except IntegrityError:
         # 중복 키 제약 조건과 같은 데이터베이스 오류 처리
         db.rollback()
         raise HTTPException(status_code=400, detail="이미 동일한 이름을 가진 사용자가 있습니다.")
-    db.refresh(db_user)
     return db_user
 
 # 유저 조회
@@ -45,6 +45,7 @@ def update_umbrella_status(db: Session, umbrella_id: int, status: str):
     db_umbrella = db.query(models.Umbrella).filter(models.Umbrella.id == umbrella_id).first()
     db_umbrella.status = status
     db.commit()
+    db.refresh(db_umbrella)
     return db_umbrella
 
 # 우산 조회
@@ -116,6 +117,7 @@ def borrow_umbrella(db: Session, umbrella_id: int, username: str):
         db.add(umbrella_history)
         # 트랜잭션 커밋
         db.commit()
+        db.refresh(umbrella_history)
 
     except:
         db.rollback()
@@ -145,6 +147,7 @@ def return_umbrella(db: Session, umbrella_id: int, username: str):
     umbrella_history.returned_at = datetime.now(timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')
 
     db.commit()
+    db.refresh(umbrella_history)
 
     return {"user_name": user.name, "umbrella_id": umbrella.id}
 
@@ -178,6 +181,7 @@ def lost_umbrella(db: Session, umbrella_id : int):
         raise HTTPException(status_code=400, detail="이미 분실된 우산입니다.")
     umbrella.status = "lost"
     db.commit()
+    db.refresh(umbrella)
     return umbrella
 
 def get_lost_umbrella(db: Session):
@@ -192,4 +196,5 @@ def restore_umbrella(db: Session, umbrella_id : int):
         raise HTTPException(status_code=400, detail="분실된 우산이 아닙니다.")
     umbrella.status = "available"
     db.commit()
+    db.refresh(umbrella)
     return umbrella
