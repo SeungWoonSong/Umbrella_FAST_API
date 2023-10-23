@@ -3,7 +3,7 @@ FROM python:3.12.0-alpine3.18
 WORKDIR /usr/app
 
 # install 
-RUN apk update && apk upgrade && apk add --no-cache gcc libc-dev libffi-dev
+RUN pip install --upgrade pip && apk update && apk upgrade && apk add --no-cache gcc libc-dev libffi-dev
 
 # copy necessary files
 COPY requirements.txt ./requirements.txt
