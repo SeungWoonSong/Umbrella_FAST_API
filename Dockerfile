@@ -1,6 +1,6 @@
-FROM python:3.10-slim
+FROM python:3.10-alpine3.18
 
-RUN apt update && apt install dumb-init
+RUN apk update && apk add dumb-init
 
 WORKDIR /usr/app
 
