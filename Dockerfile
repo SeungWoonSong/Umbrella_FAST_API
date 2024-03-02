@@ -1,19 +1,21 @@
-FROM python:3.12.0-alpine3.18
+FROM python:3.10-slim
+
+RUN apt update && apt install dumb-init
 
 WORKDIR /usr/app
 
-# install 
-RUN pip install --upgrade pip && apk update && apk upgrade && apk add --no-cache gcc libc-dev libffi-dev
-
 # copy necessary files
-COPY requirements.txt ./requirements.txt
 COPY ./sql_app ./sql_app
-COPY ./start.sh ./start.sh
+COPY ./requirements.txt ./requirements.txt
+COPY ./entrypoint.sh ./entrypoint.sh
 
-# expose port 3000, it is only for documentation, see start.sh
+RUN pip install --no-cache-dir --upgrade -r ./requirements.txt
+
+# expose port 3000, it is only for documentation, see entrypoint.sh
 EXPOSE 3000
 
-# grant permission to execute the script
-RUN chmod +x ./start.sh
+# Start dumb-init for PID 1
+ENTRYPOINT [ "/usr/bin/dumb-init", "--" ]
 
-ENTRYPOINT ["/bin/sh", "./start.sh" ]
+# Start FastAPI server
+CMD [ "/bin/sh", "./entrypoint.sh" ]
